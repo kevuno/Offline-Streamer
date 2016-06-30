@@ -53,27 +53,27 @@ import java.util.concurrent.Future;
  * @author dean
  */
 public class player extends Application {
-    /**The queue of the program**/
-    private static LinkedList<String> queue;
+
+
+    private static VideoManager manager;
 
     /**
      * Main method that will jus run the program
      * @param args: The args given
      */
-    public static void main(String[] args) {launch(args);}
+    public static void main(String[] args) {
+        launch(args);
 
-
-    /**
-     * Updates the queue of the program
-     * @param q: The given queue
-     */
-    public static void updateQueue(LinkedList<String> q){
-        queue = q;
     }
+
+
 
 
     @Override
     public void start(Stage primaryStage) {
+        //Create the video manager
+        manager = new VideoManager();
+
         //Create the view and media with the queue in order to loop recursively
         MediaView mv = createMediaView();
 
@@ -103,7 +103,9 @@ public class player extends Application {
         return mediaView;
     }
 
-    private void initMediaPlayer(final MediaView mediaView){
+    private void initMediaPlayer(final MediaView mediaView) {
+
+    LinkedList<String> queue = manager.getQueue();
         if (!queue.isEmpty()){
             System.out.println(queue);
             //Get the next item in the queue,save it into the player and push
@@ -118,6 +120,10 @@ public class player extends Application {
             mediaPlayer.setOnEndOfMedia(() -> initMediaPlayer(mediaView));
             mediaView.setMediaPlayer(mediaPlayer);
         }
+    }
+
+    public static void setManager(String filenames){
+        manager.setup(filenames);
     }
 
 

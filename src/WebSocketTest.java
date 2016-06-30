@@ -2,6 +2,7 @@
  * Created by kevin
  */
 
+import javafx.scene.media.MediaException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -17,38 +18,47 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 public class WebSocketTest{
+
     public static void main(String[] args)
     {
+        //Set up the connection
         URI uri = URI.create("ws://187.157.170.85:9000/");
-
         WebSocketClient client = new WebSocketClient();
+        connect(client,uri);
+        player.main(null);
+
+    }
+
+    public static void connect(WebSocketClient client, URI uri){
+
         try
         {
             try
             {
+                //Start client
+                client.start();
+                // The socket that receives events
+                MyWebSocketHandler socket = new MyWebSocketHandler();
+                // Attempt Connect
+                Future<Session> fut = client.connect(socket, uri);
+                // Wait for Connect
 
-                    client.start();
-                    // The socket that receives events
-                    MyWebSocketHandler socket = new MyWebSocketHandler();
-                    // Attempt Connect
-                    Future<Session> fut = client.connect(socket, uri);
-                    // Wait for Connect
+                Session session = fut.get();
 
-                    Session session = fut.get();
-                    // Send a message
+                //Save session and uri into te handler so that it can try to reconnect
+                socket.setClientUri(client,uri);
 
-                    session.getRemote().sendString("MSG|hugo|Saludos|Que onda hugo");
-
-                    System.out.println("heyy");
-                    LinkedList<String> queue = new LinkedList<>();
-                    queue.add("test4");
-                    player.updateQueue(queue);
-                    player.main(null);
+                // Send a test msg
+                session.getRemote().sendString("MSG|hugo|Saludos|Que onda hugo");
 
 
-                    // Close session
-                    //session.close();
-            }catch (Exception e){
+                // Close session
+                //session.close();
+            }catch (MediaException m){
+                System.out.println("File not found");
+
+            }
+            catch (Exception e){
                 System.out.println(e);
             }
         }
@@ -56,5 +66,6 @@ public class WebSocketTest{
         {
             t.printStackTrace(System.err);
         }
+
     }
 }
