@@ -17,24 +17,25 @@ import java.util.concurrent.Future;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
-public class WebSocketTest{
+public class WebSocketTest implements Runnable{
+    static int run = 0;
+    static WebSocketClient client;
+    static URI uri;
 
-    public static void main(String[] args)
+    public void run()
     {
         //Set up the connection
-        URI uri = URI.create("ws://187.157.170.85:9000/");
-        WebSocketClient client = new WebSocketClient();
+        uri = URI.create("ws://187.157.170.85:9000/");
+        client = new WebSocketClient();
         connect(client,uri);
-        player.main(null);
 
     }
 
     public static void connect(WebSocketClient client, URI uri){
-
-        try
-        {
-            try
-            {
+        run++;
+        try{
+            try{
+                System.out.println("asdasd");
                 //Start client
                 client.start();
                 // The socket that receives events
@@ -49,17 +50,21 @@ public class WebSocketTest{
                 socket.setClientUri(client,uri);
 
                 // Send a test msg
-                session.getRemote().sendString("MSG|hugo|Saludos|Que onda hugo");
+                session.getRemote().sendString("MSG|Kevin|Saludos|Que onda hugo");
 
 
                 // Close session
                 //session.close();
-            }catch (MediaException m){
-                System.out.println("File not found");
 
-            }
-            catch (Exception e){
+
+            }catch (Exception e) {
                 System.out.println(e);
+                System.out.println(run);
+                Thread.sleep(5000);
+
+
+            }finally {
+                connect(client, uri);
             }
         }
         catch (Throwable t)

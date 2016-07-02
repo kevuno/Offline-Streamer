@@ -52,17 +52,16 @@ import java.util.concurrent.Future;
  *
  * @author dean
  */
-public class player extends Application {
+public class player extends Application implements Runnable {
 
 
     private static VideoManager manager;
 
     /**
-     * Main method that will jus run the program
-     * @param args: The args given
+     * Main method that will just run the program
      */
-    public static void main(String[] args) {
-        launch(args);
+    public void run() {
+        launch();
 
     }
 
@@ -71,6 +70,8 @@ public class player extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        //Start the Web Socket
+
         //Create the video manager
         manager = new VideoManager();
 
