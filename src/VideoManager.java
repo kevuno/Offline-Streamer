@@ -3,6 +3,8 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Scanner;
 
@@ -63,7 +65,40 @@ public class VideoManager {
      * @throws UnsupportedEncodingException
      */
     public void setup(String files) throws FileNotFoundException, UnsupportedEncodingException {
-        //TODO
+        //Read from the list filename and check
+        //si algun archivo de la lista no existe que lo descargue
+        //Si no se pudo descargar no se agrega al queue ni al archivo
+
+        File file =  new File("videos/"+listFilename);
+
+        if(!file.exists()){
+            System.out.println("Falta archivo de lista de videos, creando uno nuevo...");
+
+            PrintWriter writerFIle = new PrintWriter("videos/"+listFilename, "UTF-8");
+
+            //writerFIle.println();
+            writerFIle.close();
+
+
+        }
+        //Get the filenames into an arrayList
+        String[] fa = files.split("-");
+        ArrayList<String> filesArray  = new ArrayList<String>(Arrays.asList(fa));
+
+        //Loop through the array to check and download if necessary
+
+        for (String vidName: filesArray){
+            if(!new File("videos/"+vidName+".mp4").exists()){
+                //TODO: download file into /videos
+                //if downloaded: add to queue
+            }else{
+                queue.add(vidName);
+            }
+
+
+        }
+
+
 
     }
 
