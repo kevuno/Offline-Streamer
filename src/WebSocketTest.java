@@ -35,15 +35,16 @@ public class WebSocketTest implements Runnable{
         run++;
         try{
             try{
-                System.out.println("asdasd");
                 //Start client
+
                 client.start();
                 // The socket that receives events
+
                 MyWebSocketHandler socket = new MyWebSocketHandler();
                 // Attempt Connect
+
                 Future<Session> fut = client.connect(socket, uri);
                 // Wait for Connect
-
                 Session session = fut.get();
 
                 //Save session and uri into te handler so that it can try to reconnect

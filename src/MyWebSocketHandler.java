@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -62,7 +61,7 @@ public class MyWebSocketHandler {
             //queue.add("test3");
             //queue.add("test1");
 
-            player.setManager("file1-file2");
+            Player.setManager("file1-file2");
         }
 
     }

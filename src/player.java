@@ -43,6 +43,8 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 //Other imports
+import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.*;
 
@@ -52,7 +54,7 @@ import java.util.concurrent.Future;
  *
  * @author dean
  */
-public class player extends Application implements Runnable {
+public class Player extends Application implements Runnable {
 
 
     private static VideoManager manager;
@@ -73,7 +75,13 @@ public class player extends Application implements Runnable {
         //Start the Web Socket
 
         //Create the video manager
-        manager = new VideoManager();
+        manager = new VideoManager("lista.txt");
+
+        try {
+            manager.setup();
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
 
         //Create the view and media with the queue in order to loop recursively
         MediaView mv = createMediaView();
@@ -89,7 +97,7 @@ public class player extends Application implements Runnable {
         final Scene scene = new Scene(root, 1080, 1920);
 
         //Set up the window
-        scene.setFill(Color.BLUE);
+        scene.setFill(Color.BLACK);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Full Screen Video Player");
         primaryStage.setFullScreen(true);
@@ -109,7 +117,7 @@ public class player extends Application implements Runnable {
     LinkedList<String> queue = manager.getQueue();
         if (!queue.isEmpty()){
             System.out.println(queue);
-            //Get the next item in the queue,save it into the player and push
+            //Get the next item in the queue,save it into the Player and push
             // it into the queue again
             String filename = queue.removeFirst();
             queue.add(filename);
@@ -124,7 +132,11 @@ public class player extends Application implements Runnable {
     }
 
     public static void setManager(String filenames){
-        manager.setup(filenames);
+        try {
+            manager.setup(filenames);
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
     }
 
 
