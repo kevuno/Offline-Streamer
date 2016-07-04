@@ -30,17 +30,27 @@
 //package projavafx.fullscreenvideoplayer;
 
 //JavaFX imports
+import java.awt.event.ActionEvent;
 import java.io.File;
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.DoubleProperty;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.scene.paint.Color;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 //Other imports
 import java.io.FileNotFoundException;
@@ -137,6 +147,16 @@ public class Player extends Application implements Runnable {
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void alert() {
+
+            /* block of code which need to execute via thread */
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Content here", ButtonType.OK);
+            alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+            alert.show();
+
+
     }
 
 
