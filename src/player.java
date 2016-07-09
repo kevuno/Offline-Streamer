@@ -66,19 +66,13 @@ import java.util.concurrent.Future;
  */
 public class Player extends Application implements Runnable {
 
-
+    /**The Maganer object that will take care of the queue**/
     private static VideoManager manager;
 
     /**
      * Main method that will just run the program
      */
-    public void run() {
-        launch();
-
-    }
-
-
-
+    public void run(){launch();}
 
     @Override
     public void start(Stage primaryStage) {
@@ -92,7 +86,7 @@ public class Player extends Application implements Runnable {
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-
+        System.out.println("aasdasd");
         //Create the view and media with the queue in order to loop recursively
         MediaView mv = createMediaView();
 
@@ -124,13 +118,14 @@ public class Player extends Application implements Runnable {
 
     private void initMediaPlayer(final MediaView mediaView) {
 
-    LinkedList<String> queue = manager.getQueue();
-        if (!queue.isEmpty()){
-            System.out.println(queue);
-            //Get the next item in the queue,save it into the Player and push
-            // it into the queue again
-            String filename = queue.removeFirst();
-            queue.add(filename);
+        if (!manager.isEmpty()){
+
+            //Print the queue for test
+            System.out.println(manager.getQueue());
+
+
+            //Get the next item from the manager by calling the play method
+            String filename = manager.getNext();
             final File f = new File("videos/"+filename+".mp4");
             //Setting up the media to autoplay
             MediaPlayer mediaPlayer = new MediaPlayer(new Media(f.toURI().toString()));
@@ -138,12 +133,21 @@ public class Player extends Application implements Runnable {
             //When the media ends, make a recursive call with the updated queue
             mediaPlayer.setOnEndOfMedia(() -> initMediaPlayer(mediaView));
             mediaView.setMediaPlayer(mediaPlayer);
+        }else{
+            System.out.println("empty");
+            //There is no videos in the manager, try again in 10 seconds.
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            initMediaPlayer(mediaView);
         }
     }
 
     public static void setManager(String filenames){
         try {
-            manager.setup(filenames);
+            manager.setup();
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -155,7 +159,6 @@ public class Player extends Application implements Runnable {
             Alert alert = new Alert(Alert.AlertType.INFORMATION, "Content here", ButtonType.OK);
             alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
             alert.show();
-
 
     }
 

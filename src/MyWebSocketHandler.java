@@ -14,8 +14,8 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 @WebSocket
 public class MyWebSocketHandler {
-    WebSocketClient client;
-    URI uri;
+    private WebSocketClient client;
+    private URI uri;
 
 
 
