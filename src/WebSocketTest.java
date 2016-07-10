@@ -1,18 +1,8 @@
 /**
- * Created by kevin
+ * Created by Kevin Bastian
  */
 
-import javafx.scene.media.MediaException;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.websocket.server.WebSocketHandler;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-
-import java.net.InetSocketAddress;
-
-
 import java.net.URI;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.concurrent.Future;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;

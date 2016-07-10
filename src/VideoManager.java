@@ -14,17 +14,11 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.Scanner;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by kevin
@@ -32,14 +26,14 @@ import java.util.concurrent.Executors;
 public class VideoManager {
 
     /**The queue of the program, it has a pair of values a name and the original position of the queue**/
-    private LinkedList<Pair> queue;
+    private static LinkedList<Pair> queue;
 
     /**The filename of the list for the queue**/
-    private String listFilename;
+    private static String listFilename;
 
-    public VideoManager(String listFilename){
-        this.listFilename = listFilename;
-        this.queue = new LinkedList<>();
+    public VideoManager(String thatListFilename){
+        listFilename = thatListFilename;
+        queue = new LinkedList<>();
     }
 
 
@@ -83,6 +77,8 @@ public class VideoManager {
 
                 //Only if it is not found in the directory, add to non exist queue.
                 if(!new File("videos/"+completeVidName).exists()){
+                    //TODO posible direct download with a thread or not, in case you want to make it O(n) instead
+                    // of O(2n) as in right now.
                     nonExistQueue.add(node);
                 }else{
                     //Add to the exist queue
@@ -93,7 +89,7 @@ public class VideoManager {
             input.close();
 
             //Call the download method
-            this.queue = Download(nonExistQueue,existQueue);
+            queue = Download(nonExistQueue,existQueue);
 
         }
     }
@@ -127,31 +123,34 @@ public class VideoManager {
             Pair first_node = noExistQueue.removeFirst();
             FileDownloader downloader = new FileDownloader(first_node.getname());
             if(downloader.downloadFromFile()){
-                finalQueue.add(first_node);
+                existQueue.add(first_node);
             }
 
             //TODO: quit the alert
         }
 
-
+        //Start the missing files downloads.
         Thread downloads = new Thread(new FileDownloader(noExistQueue));
-
         downloads.start();
 
-        System.out.println("STARTING PLAYER");
-        //TODO: get notification from downloader that a node was downloaded so that it can be added to the queue
-
-        //TODO: see why is file not available even though it finished the download
-        // using addNode method
+        System.out.println("END OF DOWNLOADS");
 
 
-
-        //Start the missing files downloads.
 
 
         //Return only the queue with the files that existed + were downloaded
 
-        return noExistQueue;
+
+        return existQueue;
+    }
+
+    /**
+     * This method will be triggered when the FileDownloader finishes downloading files from a queue
+     * @param node: The node from the FileDownloader to be added
+     */
+    public static void downloadQueueListener(Pair node){
+        System.out.println("GETTING ONE CALL, node was"+ node);
+            addNode(node);
     }
 
 
@@ -160,8 +159,8 @@ public class VideoManager {
      * Adds the given node to the queue according to the position given by the node
      * @param node: The node to be added to the queue
      */
-    public void addNode(Pair node){
-        //Append to the beggining if queue is empty
+    public static Boolean addNode(Pair node){
+        //Append to the beginning if queue is empty
         if(queue.isEmpty()){
            queue.addFirst(node);
 
@@ -170,31 +169,57 @@ public class VideoManager {
             //If the first node of the queue is bigger than the value of the node to be inserte
             //then we append the node at the front of the queue
             if(queue.get(0).getvalue() > node.getvalue()){
+                System.out.println("Adding at the beginning");
                 queue.addFirst(node);
             }
+
+
             //Otherwise we will go through the queue until we find in the right place to append the node
-            for(Pair queueNode : this.queue){
-                //If this is the last node of the queue and it is smaller than the node to be inserted,
-                // then it is appended to the end of the queue
-                if(queue.getLast() == queueNode && queueNode.getvalue() < node.getvalue()){
-                    queue.addLast(node);
+            //Visited list
+            ArrayList<Integer> visited = new ArrayList<>();
 
+
+            for(Pair queueNode : queue){
+                System.out.println(queueNode);
+                //Check if the current node is the last node
+                if(queue.getLast() == queueNode){
+                    //If this is the last node of the queue and it is smaller than the node to be inserted,
+                    // then it is appended to the end of the queue
+                    if(queueNode.getvalue() < node.getvalue()){
+                        queue.addLast(node);
+                        return true;
+
+                    }
+
+                }else{
+
+
+                    /*If the node to be inserted is bigger than the current node of the queue AND (
+                    *it is smaller than the next node of the queue, or the next node of the queue is
+                    * equal to the first node of the queue then we append at the position of the next
+                    * (in the middle)
+                    *node of the queue.*/
+
+                    int nextNodevalue = queue.get(queue.indexOf(queueNode)+1).getvalue();
+                    int firstNodevalue = getTrulyFirst().getvalue();
+                    int lastNodevalue = getTrulyLast().getvalue();
+
+                    if(node.getvalue() > queueNode.getvalue() && node.getvalue() < nextNodevalue){
+                        queue.add(queue.indexOf(queueNode),node);
+                        return true;
+
+
+                    }else if (firstNodevalue == nextNodevalue && !visited.contains(lastNodevalue)){
+                        //Add if the next value is the smallest value but only if the for loop has not
+                        // visited the largest value of the queue.
+                        queue.add(queue.indexOf(queueNode)+1,node);
+                    }
                 }
-
-
-                /*If the node to be inserted is bigger than the current node of the queue AND
-                 *it is smaller than the next node of the queue, then we append at he position of the next
-                 *node of the queue.*/
-
-                int nextNodevalue = queue.get(queue.indexOf(queueNode)+1).getvalue();
-
-                if(node.getvalue() > queueNode.getvalue() && node.getvalue() < nextNodevalue){
-                    queue.add(queue.indexOf(queueNode),node);
-
-                }
-
+                visited.add(node.getvalue());
             }
+
         }
+        return false;
 
     }
 
@@ -214,7 +239,7 @@ public class VideoManager {
     }
 
     public void alert(){
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Content here", ButtonType.OK);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, "No se encontró ningun video, descargando", ButtonType.OK);
         alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
         alert.show();
     }
@@ -236,6 +261,34 @@ public class VideoManager {
    ///////////////GENERIC CLASS METHODS//////////////
 
     /**
+     * Get the smallest node of the queue
+     */
+    public static Pair getTrulyFirst(){
+        LinkedList<Pair> temp = new LinkedList<>();
+        for (Pair node : queue){
+            temp.add(node);
+        }
+        Collections.sort(temp,new Pair());
+
+        return temp.getFirst();
+
+    }
+    /**
+     * Get the largest node of the queue
+     */
+    public static Pair getTrulyLast(){
+        LinkedList<Pair> temp = new LinkedList<>();
+        for (Pair node : queue){
+            temp.add(node);
+        }
+        Collections.sort(temp,new Pair());
+
+        return temp.getLast();
+
+    }
+
+
+    /**
      * This method will get the last item name of the queue and insert it into the back of the queue
      */
     public String getNext(){
@@ -249,7 +302,7 @@ public class VideoManager {
     }
 
     public LinkedList<Pair> getQueue(){
-        return this.queue;
+        return queue;
     }
 
 }
