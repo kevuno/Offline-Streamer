@@ -107,8 +107,6 @@ public class VideoManager {
 
     public LinkedList<Pair> Download(LinkedList<Pair> noExistQueue, LinkedList<Pair> existQueue){
 
-        LinkedList<Pair> finalQueue = new LinkedList<>();
-
         if(noExistQueue.isEmpty()){
             return existQueue;
         }
@@ -116,31 +114,28 @@ public class VideoManager {
         if(existQueue.isEmpty()){
 
             //Alert and download only first file
-            alert();
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "No se encontró ningun video, descargando", ButtonType.OK);
+            alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+            alert.show();
 
 
-            //Get first item out of the queue:
+            //Get first item out of the queue and download it while the alert is shown.
             Pair first_node = noExistQueue.removeFirst();
             FileDownloader downloader = new FileDownloader(first_node.getname());
             if(downloader.downloadFromFile()){
+                //Add to the exist queue, since now there is a file in the directory.
                 existQueue.add(first_node);
             }
+            //Once it finishes hide the aler
+            alert.hide();
 
-            //TODO: quit the alert
         }
 
         //Start the missing files downloads.
         Thread downloads = new Thread(new FileDownloader(noExistQueue));
         downloads.start();
 
-        System.out.println("END OF DOWNLOADS");
-
-
-
-
         //Return only the queue with the files that existed + were downloaded
-
-
         return existQueue;
     }
 
@@ -149,8 +144,13 @@ public class VideoManager {
      * @param node: The node from the FileDownloader to be added
      */
     public static void downloadQueueListener(Pair node){
-        System.out.println("GETTING ONE CALL, node was"+ node);
+        //TODO: See how to avoid this exception
+        try{
             addNode(node);
+        }catch(ConcurrentModificationException e ){
+            System.out.println("Modifying queue from Filedownloader");
+        }
+
     }
 
 
@@ -193,7 +193,6 @@ public class VideoManager {
 
                 }else{
 
-
                     /*If the node to be inserted is bigger than the current node of the queue AND (
                     *it is smaller than the next node of the queue, or the next node of the queue is
                     * equal to the first node of the queue then we append at the position of the next
@@ -228,7 +227,7 @@ public class VideoManager {
 
 
     ////JAVAFX RELATED METHODS/////////
-
+    //TODO: make this less spaggetiy.
     public void runAnotherApp(Class<? extends Application> anotherAppClass) throws Exception {
         Application app2 = anotherAppClass.newInstance();
         Stage anotherStage = new Stage();
@@ -238,11 +237,6 @@ public class VideoManager {
         app2.start(anotherStage);
     }
 
-    public void alert(){
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, "No se encontró ningun video, descargando", ButtonType.OK);
-        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-        alert.show();
-    }
     public class RunLoading implements Runnable{
 
         @Override
