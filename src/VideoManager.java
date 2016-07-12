@@ -1,24 +1,13 @@
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * Created by kevin
@@ -26,11 +15,15 @@ import java.util.concurrent.Future;
 public class VideoManager {
 
     /**The queue of the program, it has a pair of values a name and the original position of the queue**/
-    private static LinkedList<Pair> queue;
+    private volatile static LinkedList<Pair> queue;
 
     /**The filename of the list for the queue**/
     private static String listFilename;
 
+    /**
+     * Constructs the Manager with a filename, which inside has the list of the videos.
+     * @param thatListFilename: The filename with the list
+     */
     public VideoManager(String thatListFilename){
         listFilename = thatListFilename;
         queue = new LinkedList<>();
@@ -43,17 +36,13 @@ public class VideoManager {
      * @throws UnsupportedEncodingException
      */
     public void setup() throws FileNotFoundException, UnsupportedEncodingException {
-        //Read from the list filename and check
 
         File file =  new File("videos/"+listFilename);
         //Check if the list file exists in the videos directory, if not it will be created
         if(!file.exists()){
             System.out.println("Falta archivo de lista de videos, creando uno nuevo...");
-
             PrintWriter writerFIle = new PrintWriter("videos/"+listFilename, "UTF-8");
-
             writerFIle.close();
-
         }else{
             //Open list file and read to insert into queue
             File listFile = new File("videos/"+listFilename);
@@ -68,20 +57,15 @@ public class VideoManager {
 
             Integer position_count = 0;
             while (input.hasNextLine()){
-                //Names
                 String vidName = input.nextLine().trim();
                 String completeVidName = vidName+".mp4";
-
                 //Create node to insert in queue
                 Pair node = new Pair(vidName,position_count);
 
-                //Only if it is not found in the directory, add to non exist queue.
+                //Add the node to the respective queue, depending on whether it is found in the directory.
                 if(!new File("videos/"+completeVidName).exists()){
-                    //TODO posible direct download with a thread or not, in case you want to make it O(n) instead
-                    // of O(2n) as in right now.
                     nonExistQueue.add(node);
                 }else{
-                    //Add to the exist queue
                     existQueue.add(node);
                 }
                 position_count++;
@@ -93,6 +77,32 @@ public class VideoManager {
 
         }
     }
+
+    /**
+     * Changes the queue from a Message obtained by the WS.
+     * @throws FileNotFoundException
+     * @throws UnsupportedEncodingException
+     */
+    public void setup(String codedMessage) throws FileNotFoundException, UnsupportedEncodingException {
+
+        File file =  new File("videos/"+listFilename);
+        //Check if the list file exists in the videos directory, if not it will be created
+        if(!file.exists()){
+            System.out.println("Falta archivo de lista de videos, creando uno nuevo...");
+            PrintWriter writerFIle = new PrintWriter("videos/"+listFilename, "UTF-8");
+            writerFIle.close();
+        }else{
+            //TODO: Go through each element in the Parsed message
+
+        }
+    }
+
+
+
+
+
+
+
 
     /**
      * If the exist Queue, which contains the filenames that are found in the directory, is empty
@@ -107,6 +117,7 @@ public class VideoManager {
 
     public LinkedList<Pair> Download(LinkedList<Pair> noExistQueue, LinkedList<Pair> existQueue){
 
+        //If no files are missing, then no need to download anything
         if(noExistQueue.isEmpty()){
             return existQueue;
         }
@@ -126,7 +137,7 @@ public class VideoManager {
                 //Add to the exist queue, since now there is a file in the directory.
                 existQueue.add(first_node);
             }
-            //Once it finishes hide the aler
+            //Once it finishes hide the alert
             alert.hide();
 
         }
@@ -139,12 +150,29 @@ public class VideoManager {
         return existQueue;
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /**
      * This method will be triggered when the FileDownloader finishes downloading files from a queue
      * @param node: The node from the FileDownloader to be added
      */
     public static void downloadQueueListener(Pair node){
-        //TODO: See how to avoid this exception
         try{
             addNode(node);
         }catch(ConcurrentModificationException e ){
@@ -175,10 +203,9 @@ public class VideoManager {
 
 
             //Otherwise we will go through the queue until we find in the right place to append the node
-            //Visited list
+
+            //Add nodes into a visited list
             ArrayList<Integer> visited = new ArrayList<>();
-
-
             for(Pair queueNode : queue){
                 System.out.println(queueNode);
                 //Check if the current node is the last node
@@ -188,11 +215,8 @@ public class VideoManager {
                     if(queueNode.getvalue() < node.getvalue()){
                         queue.addLast(node);
                         return true;
-
                     }
-
                 }else{
-
                     /*If the node to be inserted is bigger than the current node of the queue AND (
                     *it is smaller than the next node of the queue, or the next node of the queue is
                     * equal to the first node of the queue then we append at the position of the next
@@ -203,11 +227,10 @@ public class VideoManager {
                     int firstNodevalue = getTrulyFirst().getvalue();
                     int lastNodevalue = getTrulyLast().getvalue();
 
+
                     if(node.getvalue() > queueNode.getvalue() && node.getvalue() < nextNodevalue){
                         queue.add(queue.indexOf(queueNode),node);
                         return true;
-
-
                     }else if (firstNodevalue == nextNodevalue && !visited.contains(lastNodevalue)){
                         //Add if the next value is the smallest value but only if the for loop has not
                         // visited the largest value of the queue.
