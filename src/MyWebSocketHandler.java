@@ -35,7 +35,8 @@ public class MyWebSocketHandler {
 
         System.out.println("Trying to Connect to: " + session.getRemoteAddress().getAddress());
         try {
-            session.getRemote().sendString("REG|hugo|samtec");
+            session.getRemote().sendString("REG|videosws|samtec");
+            session.getRemote().sendString("MSG|videosws|videosws|U");
         }catch (IOException e) {
             e.printStackTrace();
         }
@@ -48,20 +49,22 @@ public class MyWebSocketHandler {
         System.out.println("Message: " + message);
 
 
-        String[] Array1 = message.split("\\|");
-        if(Array1[0].equals("MSG")){
-            String[] Array = Array1[1].split(",");
-            ArrayList<String> dataArray = new ArrayList<String>(Arrays.asList(Array));
-            LinkedList<String> queue = new LinkedList<>();
-            for (String element: dataArray) {
-                queue.add(element);
+        String[] Array = message.split("\\|");
+        if(Array[0].equals("VID")){
+            System.out.println();
+            //Leave only the data array by removing the first two elements of the original message.
+            ArrayList<String> dataArray = new ArrayList<>(Arrays.asList(Array));
+            dataArray.subList(0,2).clear();
+            String finalCodedMsg = String.join("|",dataArray);
+            System.out.println(finalCodedMsg);
+            try{
+                Player.setManager(finalCodedMsg);
+            }catch (Exception e){
+                e.printStackTrace();
             }
 
-            //queue.add("test4");
-            //queue.add("test3");
-            //queue.add("test1");
 
-            Player.setManager("file1-file2");
+
         }
 
     }

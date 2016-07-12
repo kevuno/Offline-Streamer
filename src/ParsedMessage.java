@@ -7,41 +7,43 @@
 //BASE 64 libraries
 import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 
 
 public class ParsedMessage {
 
-    ArrayList<VideoFileData> filesDataList;
+    private ArrayList<VideoFileData> filesDataList;
 
     /**
      * Construct object by spliting the message by first delimiter, decoding with base64 each partition,
      * and finally split each partition to obtain the data found inside.
      * @param message The message to be parsed
-     * @param delimiter1 The delimiter that will split into base64 string tokens.
-     * @param delimiter2 The delimiter that will split each token to obtain the data.
      */
-    public ArrayList<VideoFileData> ParsedMessage(String message, String delimiter1, String delimiter2){
-        filesDataList = new ArrayList<>();
-
-        String[] base64Array = message.split(delimiter1);
-
-        for(String base64Token : base64Array){
-            byte[] dataInBytes = DatatypeConverter.parseBase64Binary(base64Token);
-            String[] dataArray = DatatypeConverter.printBase64Binary(dataInBytes).split(delimiter2);
-
-            //Create a VideoFileData object
-            //Index = 0 is name, ind = 1 is name is name in server, ind = 2 is position
-            VideoFileData parsedObject = new VideoFileData(dataArray[0],dataArray[1],Integer.parseInt(dataArray[2]));
-            filesDataList.add(parsedObject);
-
+    public ParsedMessage(String message){
+        //Final arrayList with the message
+        final ArrayList<VideoFileData>filesDataListFromMessage = new ArrayList<>();
+        String[] base64Array = message.split("\\|");
+        ArrayList<String> base64ArrayList = new ArrayList<>(Arrays.asList(base64Array));
+        for(String base64Token : base64ArrayList){
+            //Decode and convert bytes to string to then obtain data
+            byte[] decoded = Base64.getDecoder().decode(base64Token);
+            String[] dataArray = new String(decoded).split("\\|");
+            ArrayList<String> decodedArrayList = new ArrayList<>(Arrays.asList(dataArray));
+            System.out.println(decodedArrayList);
+            //Create a VideoFileData object and add to list
+            //Index = 0 is url, ind = 1 is name is name, ind = 2 is position
+            String url = decodedArrayList.get(0);
+            String name = decodedArrayList.get(1);
+            Integer position = Integer.parseInt(decodedArrayList.get(2));
+            VideoFileData parsedObject = new VideoFileData(url,name,position);
+            filesDataListFromMessage.add(parsedObject);
         }
-
-        return filesDataList;
-
-
-
-
-
-
+        this.filesDataList = filesDataListFromMessage;
     }
+
+    public ArrayList<VideoFileData> getVideoFileDataList(){
+        return this.filesDataList;
+    }
+
 }

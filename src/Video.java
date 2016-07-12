@@ -3,17 +3,20 @@ import java.util.Comparator;
 /**
  * Created by Kevin Bastian
  */
-public class Pair implements Comparator<Pair> {
+public class Video implements Comparator<Video> {
     private String name;
     private Integer value;
+    private String url;
 
-    public Pair(){
+    //Empty constructor for the sorter
+    public Video(){
 
     }
 
-    public Pair(String name, int value) {
+    public Video(String name, int value, String url) {
         this.name = name;
         this.value = value;
+        this.url = url;
 
     }
     public String getname(){
@@ -23,14 +26,16 @@ public class Pair implements Comparator<Pair> {
         return value;
     }
 
+    public String getUrl() {
+        return url;
+    }
     @Override
     public String toString(){
         return this.name;
     }
 
-
     @Override
-    public int compare(Pair o1, Pair o2) {
+    public int compare(Video o1, Video o2) {
         if(o1.getvalue() < o2.getvalue()){
             return -1;
         }else if(o1.getvalue() == o2.getvalue()){

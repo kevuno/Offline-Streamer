@@ -41,7 +41,7 @@ public class WebSocketTest implements Runnable{
                 socket.setClientUri(client,uri);
 
                 // Send a test msg
-                session.getRemote().sendString("MSG|Kevin|Saludos|Que onda hugo");
+                //session.getRemote().sendString("MSG|videosws|Saludos|Que onda hugo");
 
 
                 // Close session
@@ -51,8 +51,9 @@ public class WebSocketTest implements Runnable{
             }catch (Exception e) {
                 System.out.println(e);
                 System.out.println(run);
+                Thread.sleep(15000);
                 connect(client, uri);
-                Thread.sleep(5000);
+
 
             }
         }

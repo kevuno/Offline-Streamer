@@ -145,9 +145,9 @@ public class Player extends Application implements Runnable {
         }
     }
 
-    public static void setManager(String filenames){
+    public static void setManager(String codedMessage){
         try {
-            manager.setup();
+            manager.setup(codedMessage);
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }

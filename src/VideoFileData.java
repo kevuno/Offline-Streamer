@@ -2,17 +2,29 @@
  * Created by kevin
  */
 public class VideoFileData {
-    String name;
+    String url;
 
-    String nameInServer;
+    String name;
 
     Integer position;
 
-    public VideoFileData(String name, String nameInServer, Integer position){
+    public VideoFileData(String url, String name, Integer position){
+        this.url = url;
         this.name = name;
-        this.nameInServer = nameInServer;
         this.position = position;
 
+    }
+
+    public String getUrl(){
+        return this.url;
+    }
+
+    public String getName(){
+        return this.name;
+    }
+
+    public Integer getPosition(){
+        return this.position;
     }
 
 }

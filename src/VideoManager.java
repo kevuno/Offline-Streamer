@@ -10,12 +10,16 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Created by kevin
+ * Created by Kevin Bastian
+ *
+ * This class is in charge of keeping the queue for the Video Player in order by downloading files that are missing
+ * and receiving information from the WebSocket.
  */
+
 public class VideoManager {
 
     /**The queue of the program, it has a pair of values a name and the original position of the queue**/
-    private volatile static LinkedList<Pair> queue;
+    private volatile static LinkedList<Video> queue;
 
     /**The filename of the list for the queue**/
     private static String listFilename;
@@ -49,18 +53,23 @@ public class VideoManager {
             Scanner input = new Scanner(listFile);
 
             //This queue that will contain the names from the list file that exist in the videos dir.
-            LinkedList<Pair> existQueue = new LinkedList<>();
+            LinkedList<Video> existQueue    = new LinkedList<>();
             //This queue will only contain the names from the list file that don't exist in the videos dir.
-            LinkedList<Pair> nonExistQueue = new LinkedList<>();
+            LinkedList<Video> nonExistQueue = new LinkedList<>();
 
             /*Go through the names in the file and add to the corresponding queues */
 
             Integer position_count = 0;
             while (input.hasNextLine()){
-                String vidName = input.nextLine().trim();
-                String completeVidName = vidName+".mp4";
+
+                //FORMAT:  name,url
+                String line = input.nextLine().trim();
+                String[] csv = line.split(",");
+
+                String name = csv[0]; String url = csv[1];
+                String completeVidName = csv[0]+".mp4";
                 //Create node to insert in queue
-                Pair node = new Pair(vidName,position_count);
+                Video node = new Video(name,position_count,url);
 
                 //Add the node to the respective queue, depending on whether it is found in the directory.
                 if(!new File("videos/"+completeVidName).exists()){
@@ -72,11 +81,17 @@ public class VideoManager {
             }
             input.close();
 
-            //Call the download method
-            queue = Download(nonExistQueue,existQueue);
+            //If no files are missing, then no need to download anything
+            if(!nonExistQueue.isEmpty()){
+                queue = Download(nonExistQueue,existQueue);
+            }else{
+                queue = existQueue;
+            }
 
         }
     }
+
+
 
     /**
      * Changes the queue from a Message obtained by the WS.
@@ -84,25 +99,42 @@ public class VideoManager {
      * @throws UnsupportedEncodingException
      */
     public void setup(String codedMessage) throws FileNotFoundException, UnsupportedEncodingException {
+        //Check if the list file exists in the videos directory, if not it will be created
 
         File file =  new File("videos/"+listFilename);
-        //Check if the list file exists in the videos directory, if not it will be created
         if(!file.exists()){
             System.out.println("Falta archivo de lista de videos, creando uno nuevo...");
             PrintWriter writerFIle = new PrintWriter("videos/"+listFilename, "UTF-8");
             writerFIle.close();
         }else{
-            //TODO: Go through each element in the Parsed message
+
+            //Obtain parsed message from a codedMessage
+            ParsedMessage listOfFilesData = new ParsedMessage(codedMessage);
+
+            LinkedList<Video> existQueue    = new LinkedList<>();
+            LinkedList<Video> nonExistQueue = new LinkedList<>();
+
+            for(VideoFileData videoData : listOfFilesData.getVideoFileDataList()){
+                //Get data and put into queues
+                String name      = videoData.getName();
+                Integer position = videoData.getPosition();
+                String url       = videoData.getUrl();
+                Video node = new Video(name,position,url);
+
+                //Add the node to the respective queue, depending on whether it is found in the directory.
+                if(!new File("videos/"+name+".mp4").exists()){
+                    nonExistQueue.add(node);
+                }else{
+                    existQueue.add(node);
+                }
+            }
+            //If no files are missing, then no need to download anything
+            if(!nonExistQueue.isEmpty()){
+                queue = Download(nonExistQueue,existQueue);
+            }
 
         }
     }
-
-
-
-
-
-
-
 
     /**
      * If the exist Queue, which contains the filenames that are found in the directory, is empty
@@ -115,12 +147,7 @@ public class VideoManager {
      * @param existQueue: The queue that contains the files that were found
      */
 
-    public LinkedList<Pair> Download(LinkedList<Pair> noExistQueue, LinkedList<Pair> existQueue){
-
-        //If no files are missing, then no need to download anything
-        if(noExistQueue.isEmpty()){
-            return existQueue;
-        }
+    public LinkedList<Video> Download(LinkedList<Video> noExistQueue, LinkedList<Video> existQueue){
 
         if(existQueue.isEmpty()){
 
@@ -131,8 +158,8 @@ public class VideoManager {
 
 
             //Get first item out of the queue and download it while the alert is shown.
-            Pair first_node = noExistQueue.removeFirst();
-            FileDownloader downloader = new FileDownloader(first_node.getname());
+            Video first_node = noExistQueue.removeFirst();
+            FileDownloader downloader = new FileDownloader(first_node.getname(),first_node.getUrl());
             if(downloader.downloadFromFile()){
                 //Add to the exist queue, since now there is a file in the directory.
                 existQueue.add(first_node);
@@ -172,7 +199,7 @@ public class VideoManager {
      * This method will be triggered when the FileDownloader finishes downloading files from a queue
      * @param node: The node from the FileDownloader to be added
      */
-    public static void downloadQueueListener(Pair node){
+    public static void downloadQueueListener(Video node){
         try{
             addNode(node);
         }catch(ConcurrentModificationException e ){
@@ -187,7 +214,7 @@ public class VideoManager {
      * Adds the given node to the queue according to the position given by the node
      * @param node: The node to be added to the queue
      */
-    public static Boolean addNode(Pair node){
+    public static Boolean addNode(Video node){
         //Append to the beginning if queue is empty
         if(queue.isEmpty()){
            queue.addFirst(node);
@@ -206,7 +233,7 @@ public class VideoManager {
 
             //Add nodes into a visited list
             ArrayList<Integer> visited = new ArrayList<>();
-            for(Pair queueNode : queue){
+            for(Video queueNode : queue){
                 System.out.println(queueNode);
                 //Check if the current node is the last node
                 if(queue.getLast() == queueNode){
@@ -260,19 +287,6 @@ public class VideoManager {
         app2.start(anotherStage);
     }
 
-    public class RunLoading implements Runnable{
-
-        @Override
-        public void run() {
-            try {
-                runAnotherApp(loading.class);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-
 
 
    ///////////////GENERIC CLASS METHODS//////////////
@@ -280,12 +294,12 @@ public class VideoManager {
     /**
      * Get the smallest node of the queue
      */
-    public static Pair getTrulyFirst(){
-        LinkedList<Pair> temp = new LinkedList<>();
-        for (Pair node : queue){
+    public static Video getTrulyFirst(){
+        LinkedList<Video> temp = new LinkedList<>();
+        for (Video node : queue){
             temp.add(node);
         }
-        Collections.sort(temp,new Pair());
+        Collections.sort(temp,new Video());
 
         return temp.getFirst();
 
@@ -293,12 +307,12 @@ public class VideoManager {
     /**
      * Get the largest node of the queue
      */
-    public static Pair getTrulyLast(){
-        LinkedList<Pair> temp = new LinkedList<>();
-        for (Pair node : queue){
+    public static Video getTrulyLast(){
+        LinkedList<Video> temp = new LinkedList<>();
+        for (Video node : queue){
             temp.add(node);
         }
-        Collections.sort(temp,new Pair());
+        Collections.sort(temp,new Video());
 
         return temp.getLast();
 
@@ -309,7 +323,7 @@ public class VideoManager {
      * This method will get the last item name of the queue and insert it into the back of the queue
      */
     public String getNext(){
-        Pair last_node = queue.removeFirst();
+        Video last_node = queue.removeFirst();
         queue.add(last_node);
         return last_node.getname();
     }
@@ -318,7 +332,7 @@ public class VideoManager {
         return queue.isEmpty();
     }
 
-    public LinkedList<Pair> getQueue(){
+    public LinkedList<Video> getQueue(){
         return queue;
     }
 
