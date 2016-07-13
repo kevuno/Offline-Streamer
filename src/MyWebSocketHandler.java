@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -17,10 +16,12 @@ public class MyWebSocketHandler {
     private WebSocketClient client;
     private URI uri;
 
+    private static boolean active;
 
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) throws InterruptedException {
+        active = false;
         System.out.println("Close: statusCode=" + statusCode + ", reason=" + reason);
         WebSocketTest.connect(client,uri);
     }
@@ -32,7 +33,7 @@ public class MyWebSocketHandler {
 
     @OnWebSocketConnect
     public void onConnect(Session session) throws InterruptedException {
-
+        active = true;
         System.out.println("Trying to Connect to: " + session.getRemoteAddress().getAddress());
         try {
             session.getRemote().sendString("REG|videosws|samtec");
@@ -56,7 +57,6 @@ public class MyWebSocketHandler {
             ArrayList<String> dataArray = new ArrayList<>(Arrays.asList(Array));
             dataArray.subList(0,2).clear();
             String finalCodedMsg = String.join("|",dataArray);
-            System.out.println(finalCodedMsg);
             try{
                 Player.setManager(finalCodedMsg);
             }catch (Exception e){
@@ -74,4 +74,7 @@ public class MyWebSocketHandler {
         this.uri = uri;
     }
 
+    public static Boolean isActive(){
+        return active;
+    }
 }

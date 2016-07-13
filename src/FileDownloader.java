@@ -3,6 +3,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -57,9 +60,13 @@ public  class FileDownloader implements Runnable {
             URL link = new URL(url + completeVidName);
 
             ReadableByteChannel rbc = Channels.newChannel(link.openStream());
-            FileOutputStream fos = new FileOutputStream("videos/" + completeVidName);
+            String outputDirName = "videos/temp_" + completeVidName;
+            FileOutputStream fos = new FileOutputStream(outputDirName);
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
             fos.close();
+
+            Path source = Paths.get(outputDirName);
+            Files.move(source, source.resolveSibling(completeVidName));
 
             System.out.println("Download completed");
 
@@ -78,6 +85,7 @@ public  class FileDownloader implements Runnable {
         //A list with the names of the filed files to were not downloaded successfully.
         ArrayList<Video> completed = new ArrayList<>();
 
+        System.out.println("STARTING TO DOWNLOAD FROM QUEUE" + queue);
         for (Video node : queue){
             //Do not download if it has been downloaded already
             if(!completed.contains(node)){
@@ -87,14 +95,24 @@ public  class FileDownloader implements Runnable {
                     //SETUP
                     System.out.println("Starting to download " + completeVidName);
                     URL link = new URL(url + completeVidName);
+                    String outputDirName = "videos/temp_" + completeVidName;
 
                     //DOWNLOAD
+
                     ReadableByteChannel rbc = Channels.newChannel(link.openStream());
-                    FileOutputStream fos = new FileOutputStream("videos/" + completeVidName);
+                    FileOutputStream fos = new FileOutputStream(outputDirName);
                     fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+
                     //IF THE CODE GETS TO THIS PART WITHOUT ANY EXCEPTION, IT MEANS THAT THE DOWNLOAD WAS COMPLETED
-                    System.out.println("Download completed");
+                    System.out.println("Download" + node +" completed");
                     fos.close();
+                    //Change name to specify that the file is now completely downloaded
+                    Path source = Paths.get(outputDirName);
+                    /*TODO add catch exception for
+                    TODO java.nio.file.FileSystemException: videos\temp_2.mp4 -> videos\2.mp4: El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso.
+                     */
+                    Files.move(source, source.resolveSibling(completeVidName));
+
                     //Add to the completed list
                     completed.add(node);
                     //Pass the completed node to the VideoManager
@@ -103,6 +121,7 @@ public  class FileDownloader implements Runnable {
                     //Add to the fails list in case of any exception
                 } catch (IOException e) {
                     System.out.println("Unable to download file "+ node.getname());
+                    e.printStackTrace();
                 } catch (Exception e) {
                     System.out.println("Unable to download file "+ node.getname());
                     e.printStackTrace();

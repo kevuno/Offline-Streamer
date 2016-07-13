@@ -1,11 +1,11 @@
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import sun.awt.image.ImageWatched;
 
+import javax.swing.*;
 import java.io.*;
 import java.util.*;
 
@@ -24,6 +24,10 @@ public class VideoManager {
     /**The filename of the list for the queue**/
     private static String listFilename;
 
+    /**A status variable of the manager that will be true only when the Manager is setup for the first time**/
+    private Boolean firstRun;
+
+
     /**
      * Constructs the Manager with a filename, which inside has the list of the videos.
      * @param thatListFilename: The filename with the list
@@ -35,12 +39,34 @@ public class VideoManager {
 
 
     /**
+     * Initiate the manager depending of the status of the WebSocket. If it is not active after
+     * trying 15 seconds later, use the setup from file
+     */
+
+
+    public void initManager() throws FileNotFoundException, UnsupportedEncodingException {
+        this.firstRun = true;
+        System.out.println("WS ACTIVE? " +MyWebSocketHandler.isActive());
+        if(!MyWebSocketHandler.isActive()){
+            //Try again 20 seconds later
+            try {
+                Thread.sleep(20000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("WS ACTIVE? " +MyWebSocketHandler.isActive());
+            if(!MyWebSocketHandler.isActive()){
+                setupLocal();
+            }
+        }
+    }
+
+    /**
      * First time running the program, it will be set up using this method
      * @throws FileNotFoundException
      * @throws UnsupportedEncodingException
      */
-    public void setup() throws FileNotFoundException, UnsupportedEncodingException {
-
+    public void setupLocal() throws FileNotFoundException, UnsupportedEncodingException {
         File file =  new File("videos/"+listFilename);
         //Check if the list file exists in the videos directory, if not it will be created
         if(!file.exists()){
@@ -89,6 +115,7 @@ public class VideoManager {
             }
 
         }
+        firstRun = false;
     }
 
 
@@ -98,7 +125,7 @@ public class VideoManager {
      * @throws FileNotFoundException
      * @throws UnsupportedEncodingException
      */
-    public void setup(String codedMessage) throws FileNotFoundException, UnsupportedEncodingException {
+    public void setupWs(String codedMessage) throws FileNotFoundException, UnsupportedEncodingException {
         //Check if the list file exists in the videos directory, if not it will be created
 
         File file =  new File("videos/"+listFilename);
@@ -131,9 +158,14 @@ public class VideoManager {
             //If no files are missing, then no need to download anything
             if(!nonExistQueue.isEmpty()){
                 queue = Download(nonExistQueue,existQueue);
+            }else if (firstRun){
+                //Set the queue only if this is the first time that the Manager was set
+                queue = existQueue;
+
             }
 
         }
+        firstRun = false;
     }
 
     /**
@@ -150,12 +182,15 @@ public class VideoManager {
     public LinkedList<Video> Download(LinkedList<Video> noExistQueue, LinkedList<Video> existQueue){
 
         if(existQueue.isEmpty()){
-
-            //Alert and download only first file
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "No se encontró ningun video, descargando", ButtonType.OK);
-            alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-            alert.show();
-
+            System.out.println("SHOWING ALERT");
+            //AlertDownload and download only first file
+            String alertMessage = "No se encontro ningun archivo de video, descargando...\n NO CIERRE EL PROGRAMA";
+            Thread t = new Thread(new Runnable(){
+                public void run(){
+                    JOptionPane.showMessageDialog(null, alertMessage);
+                }
+            });
+            t.start();
 
             //Get first item out of the queue and download it while the alert is shown.
             Video first_node = noExistQueue.removeFirst();
@@ -164,8 +199,25 @@ public class VideoManager {
                 //Add to the exist queue, since now there is a file in the directory.
                 existQueue.add(first_node);
             }
+            //Now move all the nodes with the same name as the first into the existQueue, since the file now exists.
+            //Instead of removing, just add the nodes that are not equal to the first node into a new list
+            // and then set it equal to noExist queue
+            LinkedList<Video> tempNoExistQueue = new LinkedList<>();
+            for(Video node : noExistQueue){
+                if(node.getname().equals(first_node.getname())){
+                    existQueue.add(node);
+
+                }else{
+                    tempNoExistQueue.add(node);
+                }
+
+            }
+            noExistQueue = tempNoExistQueue;
+
+
+
             //Once it finishes hide the alert
-            alert.hide();
+
 
         }
 
@@ -201,6 +253,7 @@ public class VideoManager {
      */
     public static void downloadQueueListener(Video node){
         try{
+            System.out.println("CALL to add node " + node);
             addNode(node);
         }catch(ConcurrentModificationException e ){
             System.out.println("Modifying queue from Filedownloader");
@@ -215,6 +268,7 @@ public class VideoManager {
      * @param node: The node to be added to the queue
      */
     public static Boolean addNode(Video node){
+        //TODO SOLVE ADDING DUPLICATES OF THE SAME NODE WHEN ONLY ONE NEEDS TO BE ADDED
         //Append to the beginning if queue is empty
         if(queue.isEmpty()){
            queue.addFirst(node);
@@ -224,7 +278,6 @@ public class VideoManager {
             //If the first node of the queue is bigger than the value of the node to be inserte
             //then we append the node at the front of the queue
             if(queue.get(0).getvalue() > node.getvalue()){
-                System.out.println("Adding at the beginning");
                 queue.addFirst(node);
             }
 
@@ -234,7 +287,6 @@ public class VideoManager {
             //Add nodes into a visited list
             ArrayList<Integer> visited = new ArrayList<>();
             for(Video queueNode : queue){
-                System.out.println(queueNode);
                 //Check if the current node is the last node
                 if(queue.getLast() == queueNode){
                     //If this is the last node of the queue and it is smaller than the node to be inserted,

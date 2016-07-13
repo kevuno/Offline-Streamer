@@ -30,7 +30,6 @@ public class ParsedMessage {
             byte[] decoded = Base64.getDecoder().decode(base64Token);
             String[] dataArray = new String(decoded).split("\\|");
             ArrayList<String> decodedArrayList = new ArrayList<>(Arrays.asList(dataArray));
-            System.out.println(decodedArrayList);
             //Create a VideoFileData object and add to list
             //Index = 0 is url, ind = 1 is name is name, ind = 2 is position
             String url = decodedArrayList.get(0);

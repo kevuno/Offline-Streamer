@@ -76,13 +76,12 @@ public class Player extends Application implements Runnable {
 
     @Override
     public void start(Stage primaryStage) {
-        //Start the Web Socket
 
         //Create the video manager
         manager = new VideoManager("lista.txt");
 
         try {
-            manager.setup();
+            manager.initManager();
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -147,7 +146,7 @@ public class Player extends Application implements Runnable {
 
     public static void setManager(String codedMessage){
         try {
-            manager.setup(codedMessage);
+            manager.setupWs(codedMessage);
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
