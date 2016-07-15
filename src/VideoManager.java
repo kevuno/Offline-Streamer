@@ -129,42 +129,50 @@ public class VideoManager {
         //Check if the list file exists in the videos directory, if not it will be created
 
         File file =  new File("videos/"+listFilename);
-        if(!file.exists()){
-            System.out.println("Falta archivo de lista de videos, creando uno nuevo...");
+
+        //Obtain parsed message from a codedMessage
+        ParsedMessage listOfFilesData = new ParsedMessage(codedMessage);
+
+        LinkedList<Video> existQueue    = new LinkedList<>();
+        LinkedList<Video> nonExistQueue = new LinkedList<>();
+
+        for(VideoFileData videoData : listOfFilesData.getVideoFileDataList()){
+            //Get data and put into queues
+            String name      = videoData.getName();
+            Integer position = videoData.getPosition();
+            String url       = videoData.getUrl();
+            Video node       = new Video(name,position,url);
+
+            //Add the node to the respective queue, depending on whether it is found in the directory.
+            if(!new File("videos/"+name+".mp4").exists()){
+                nonExistQueue.add(node);
+            }else{
+                existQueue.add(node);
+            }
+        }
+
+        //Before downloading, list file is rewritten with the new list
+        try {
             PrintWriter writerFIle = new PrintWriter("videos/"+listFilename, "UTF-8");
+            for (Video node : existQueue) {
+                writerFIle.println(node.getname()+","+node.getUrl());
+            }
             writerFIle.close();
-        }else{
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
 
-            //Obtain parsed message from a codedMessage
-            ParsedMessage listOfFilesData = new ParsedMessage(codedMessage);
 
-            LinkedList<Video> existQueue    = new LinkedList<>();
-            LinkedList<Video> nonExistQueue = new LinkedList<>();
-
-            for(VideoFileData videoData : listOfFilesData.getVideoFileDataList()){
-                //Get data and put into queues
-                String name      = videoData.getName();
-                Integer position = videoData.getPosition();
-                String url       = videoData.getUrl();
-                Video node = new Video(name,position,url);
-
-                //Add the node to the respective queue, depending on whether it is found in the directory.
-                if(!new File("videos/"+name+".mp4").exists()){
-                    nonExistQueue.add(node);
-                }else{
-                    existQueue.add(node);
-                }
-            }
-            //If no files are missing, then no need to download anything
-            if(!nonExistQueue.isEmpty()){
-                queue = Download(nonExistQueue,existQueue);
-            }else if (firstRun){
-                //Set the queue only if this is the first time that the Manager was set
-                queue = existQueue;
-
-            }
+        //If no files are missing, then no need to download anything
+        if(!nonExistQueue.isEmpty()){
+            queue = Download(nonExistQueue,existQueue);
+        }else if (firstRun){
+            //Set the queue only if this is the first time that the Manager was set
+            queue = existQueue;
 
         }
+
+
         firstRun = false;
     }
 
@@ -213,12 +221,6 @@ public class VideoManager {
 
             }
             noExistQueue = tempNoExistQueue;
-
-
-
-            //Once it finishes hide the alert
-
-
         }
 
         //Start the missing files downloads.
@@ -228,20 +230,6 @@ public class VideoManager {
         //Return only the queue with the files that existed + were downloaded
         return existQueue;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

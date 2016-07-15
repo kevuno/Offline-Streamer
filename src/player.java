@@ -69,10 +69,13 @@ public class Player extends Application implements Runnable {
     /**The Maganer object that will take care of the queue**/
     private static VideoManager manager;
 
+    /**Counter**/
+    private static int counter;
+
     /**
      * Main method that will just run the program
      */
-    public void run(){launch();}
+    public void run(){launch(); counter=0;}
 
     @Override
     public void start(Stage primaryStage) {
@@ -116,21 +119,27 @@ public class Player extends Application implements Runnable {
     }
 
     private void initMediaPlayer(final MediaView mediaView) {
+        System.out.println("Starting initMediaPlayer");
+        counter++;
 
-        if (!manager.isEmpty()){
+        if (!manager.isEmpty()) {
 
             //Print the queue for test
             System.out.println(manager.getQueue());
 
 
-            //Get the next item from the manager by calling the play method
+            //Get the next item from the manager and move the current item to the end
             String filename = manager.getNext();
-            final File f = new File("videos/"+filename+".mp4");
+            final File f = new File("/videos/" + filename + ".mp4");
             //Setting up the media to autoplay
             MediaPlayer mediaPlayer = new MediaPlayer(new Media(f.toURI().toString()));
             mediaPlayer.setAutoPlay(true);
             //When the media ends, make a recursive call with the updated queue
-            mediaPlayer.setOnEndOfMedia(() -> initMediaPlayer(mediaView));
+            mediaPlayer.setOnEndOfMedia(()->{
+                System.out.println("END OF MEDIA");
+                initMediaPlayer(mediaView);
+            });
+            System.out.println("Reproduction #"+counter);
             mediaView.setMediaPlayer(mediaPlayer);
         }else{
             System.out.println("empty");
