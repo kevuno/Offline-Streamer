@@ -47,13 +47,21 @@ public class VideoManager {
     public void initManager() throws FileNotFoundException, UnsupportedEncodingException {
         this.firstRun = true;
         System.out.println("WS ACTIVE? " +MyWebSocketHandler.isActive());
+        //Wait 5 initial seconds for the Web Socket to start
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         if(!MyWebSocketHandler.isActive()){
-            //Try again 20 seconds later
+            //Try again 10 seconds later
             try {
-                Thread.sleep(20000);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            //Finally if it was not active after 15 seconds of waiting, then just set up from local list
             System.out.println("WS ACTIVE? " +MyWebSocketHandler.isActive());
             if(!MyWebSocketHandler.isActive()){
                 setupLocal();
@@ -231,6 +239,7 @@ public class VideoManager {
         return existQueue;
     }
 
+    //TODO make dirs if they don't exist: videos folder, list file etc...
 
 
 

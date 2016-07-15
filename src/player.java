@@ -56,6 +56,8 @@ import javafx.stage.StageStyle;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import java.util.concurrent.Future;
@@ -130,12 +132,13 @@ public class Player extends Application implements Runnable {
 
             //Get the next item from the manager and move the current item to the end
             String filename = manager.getNext();
-            final File f = new File("/videos/" + filename + ".mp4");
+            final File f = new File("videos/" + filename + ".mp4");
             //Setting up the media to autoplay
             MediaPlayer mediaPlayer = new MediaPlayer(new Media(f.toURI().toString()));
             mediaPlayer.setAutoPlay(true);
             //When the media ends, make a recursive call with the updated queue
             mediaPlayer.setOnEndOfMedia(()->{
+                mediaPlayer.dispose();
                 System.out.println("END OF MEDIA");
                 initMediaPlayer(mediaView);
             });
