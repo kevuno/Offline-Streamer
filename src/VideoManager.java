@@ -1,3 +1,4 @@
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -75,13 +76,9 @@ public class VideoManager {
      * @throws UnsupportedEncodingException
      */
     public void setupLocal() throws FileNotFoundException, UnsupportedEncodingException {
-        File file =  new File("videos/"+listFilename);
-        //Check if the list file exists in the videos directory, if not it will be created
-        if(!file.exists()){
-            System.out.println("Falta archivo de lista de videos, creando uno nuevo...");
-            PrintWriter writerFIle = new PrintWriter("videos/"+listFilename, "UTF-8");
-            writerFIle.close();
-        }else{
+
+        //Check if the list file and videos directory file exists, if not it will be created.
+        if(checkAndCreateDirs()){
             //Open list file and read to insert into queue
             File listFile = new File("videos/"+listFilename);
             Scanner input = new Scanner(listFile);
@@ -92,7 +89,6 @@ public class VideoManager {
             LinkedList<Video> nonExistQueue = new LinkedList<>();
 
             /*Go through the names in the file and add to the corresponding queues */
-
             Integer position_count = 0;
             while (input.hasNextLine()){
 
@@ -121,8 +117,8 @@ public class VideoManager {
             }else{
                 queue = existQueue;
             }
-
         }
+        //Since this
         firstRun = false;
     }
 
@@ -134,54 +130,55 @@ public class VideoManager {
      * @throws UnsupportedEncodingException
      */
     public void setupWs(String codedMessage) throws FileNotFoundException, UnsupportedEncodingException {
-        //Check if the list file exists in the videos directory, if not it will be created
 
-        File file =  new File("videos/"+listFilename);
+        //Check if the list file and videos directory file exists, if not it will be created.
+        if(checkAndCreateDirs()) {
+            System.out.println("Setting up from  setupWs");
+            //Obtain parsed message from a codedMessage
+            ParsedMessage listOfFilesData = new ParsedMessage(codedMessage);
 
-        //Obtain parsed message from a codedMessage
-        ParsedMessage listOfFilesData = new ParsedMessage(codedMessage);
+            LinkedList<Video> existQueue = new LinkedList<>();
+            LinkedList<Video> nonExistQueue = new LinkedList<>();
 
-        LinkedList<Video> existQueue    = new LinkedList<>();
-        LinkedList<Video> nonExistQueue = new LinkedList<>();
+            for (VideoFileData videoData : listOfFilesData.getVideoFileDataList()) {
+                //Get data and put into queues
+                String name = videoData.getName();
+                Integer position = videoData.getPosition();
+                String url = videoData.getUrl();
+                Video node = new Video(name, position, url);
 
-        for(VideoFileData videoData : listOfFilesData.getVideoFileDataList()){
-            //Get data and put into queues
-            String name      = videoData.getName();
-            Integer position = videoData.getPosition();
-            String url       = videoData.getUrl();
-            Video node       = new Video(name,position,url);
-
-            //Add the node to the respective queue, depending on whether it is found in the directory.
-            if(!new File("videos/"+name+".mp4").exists()){
-                nonExistQueue.add(node);
-            }else{
-                existQueue.add(node);
+                //Add the node to the respective queue, depending on whether it is found in the directory.
+                if (!new File("videos/" + name + ".mp4").exists()) {
+                    nonExistQueue.add(node);
+                } else {
+                    existQueue.add(node);
+                }
             }
-        }
-
-        //Before downloading, list file is rewritten with the new list
-        try {
-            PrintWriter writerFIle = new PrintWriter("videos/"+listFilename, "UTF-8");
-            for (Video node : existQueue) {
-                writerFIle.println(node.getname()+","+node.getUrl());
+            //Before downloading, list file is rewritten with the files that were found in the new list
+            try {
+                PrintWriter writerFIle = new PrintWriter("videos/" + listFilename, "UTF-8");
+                for (Video node : existQueue) {
+                    System.out.println("PUTIING IN FILE A "+node);
+                    writerFIle.println(node.getname() + "," + node.getUrl());
+                }
+                writerFIle.close();
+            } catch (FileNotFoundException | UnsupportedEncodingException e) {
+                e.printStackTrace();
             }
-            writerFIle.close();
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
-            e.printStackTrace();
+            System.out.println("PREEEE download");
+            //If no files are missing, then no need to download anything
+            if (!nonExistQueue.isEmpty()) {
+                System.out.println("Non exist queue is not empty so there are files missing");
+                queue = Download(nonExistQueue, existQueue);
+            } else if (firstRun) {
+                //Set the queue only if this is the first time that the Manager was set
+                queue = existQueue;
+
+            }
+
+            //The firstRun for setting the Manager is over, so it is set up to false.
+            firstRun = false;
         }
-
-
-        //If no files are missing, then no need to download anything
-        if(!nonExistQueue.isEmpty()){
-            queue = Download(nonExistQueue,existQueue);
-        }else if (firstRun){
-            //Set the queue only if this is the first time that the Manager was set
-            queue = existQueue;
-
-        }
-
-
-        firstRun = false;
     }
 
     /**
@@ -197,41 +194,37 @@ public class VideoManager {
 
     public LinkedList<Video> Download(LinkedList<Video> noExistQueue, LinkedList<Video> existQueue){
 
-        if(existQueue.isEmpty()){
-            System.out.println("SHOWING ALERT");
-            //AlertDownload and download only first file
-            String alertMessage = "No se encontro ningun archivo de video, descargando...\n NO CIERRE EL PROGRAMA";
-            Thread t = new Thread(new Runnable(){
-                public void run(){
-                    JOptionPane.showMessageDialog(null, alertMessage);
-                }
-            });
-            t.start();
+        if(existQueue.isEmpty()) {
 
-            //Get first item out of the queue and download it while the alert is shown.
-            Video first_node = noExistQueue.removeFirst();
-            FileDownloader downloader = new FileDownloader(first_node.getname(),first_node.getUrl());
-            if(downloader.downloadFromFile()){
-                //Add to the exist queue, since now there is a file in the directory.
-                existQueue.add(first_node);
-            }
-            //Now move all the nodes with the same name as the first into the existQueue, since the file now exists.
-            //Instead of removing, just add the nodes that are not equal to the first node into a new list
-            // and then set it equal to noExist queue
-            LinkedList<Video> tempNoExistQueue = new LinkedList<>();
-            for(Video node : noExistQueue){
-                if(node.getname().equals(first_node.getname())){
-                    existQueue.add(node);
-
-                }else{
-                    tempNoExistQueue.add(node);
-                }
-
-            }
-            noExistQueue = tempNoExistQueue;
+            alert("No se encontro ningun video en la carpeta videos. La descarga esta comenzando...");
         }
+        //----DOWNLOAD  first item out of the queue and download it while the alert is shown.----//
 
-        //Start the missing files downloads.
+        Video first_node = noExistQueue.removeFirst();
+        FileDownloader downloader = new FileDownloader(first_node.getname(),first_node.getUrl());
+        System.out.println("predownload");
+        if(downloader.downloadFromFile()){
+            System.out.println("download response");
+            //Add to the exist queue, since now there is a file in the directory.
+            existQueue.add(first_node);
+        }
+        //Now move all the nodes with the same name as the first into the existQueue, since the file now exists.
+        //Instead of removing, just add the nodes that are not equal to the first node into a new list
+        // and then set it equal to noExist queue
+        LinkedList<Video> tempNoExistQueue = new LinkedList<>();
+        for(Video node : noExistQueue){
+            if(node.getname().equals(first_node.getname())){
+                existQueue.add(node);
+
+            }else{
+                tempNoExistQueue.add(node);
+            }
+
+        }
+        noExistQueue = tempNoExistQueue;
+
+
+        //------Start the missing files downloads.------//
         Thread downloads = new Thread(new FileDownloader(noExistQueue));
         downloads.start();
 
@@ -239,13 +232,45 @@ public class VideoManager {
         return existQueue;
     }
 
-    //TODO make dirs if they don't exist: videos folder, list file etc...
+    public Boolean checkAndCreateDirs(){
+        Boolean dirCreate = true;
+        Boolean listCreate = true;
+        //Check videos directory
+        File videosDir = new File("videos/");
+        if(!videosDir.exists()){
+            if(videosDir.mkdir()){
+                System.out.println("Videos directory successfully created");
+            }else{
+                System.out.println("Videos directory was not created");
+                dirCreate = false;
+            }
+        }
+
+        //Check list file directory
+        File listFile = new File("videos/"+listFilename);
+        if(!listFile.exists()){
+            try {
+                if (listFile.createNewFile()) {
+                    System.out.println("List file successfully created");
+                }else{
+                    System.out.println("List file was not created");
+                    listCreate = false;
+                }
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+        }
+        return dirCreate && listCreate;
+    }
+
+
 
 
 
 
     /**
-     * This method will be triggered when the FileDownloader finishes downloading files from a queue
+     * This method will be triggered when the FileDownloader finishes downloading files from a queue.
+     * As well, as the files are being downloaded, and
      * @param node: The node from the FileDownloader to be added
      */
     public static void downloadQueueListener(Video node){
@@ -254,6 +279,15 @@ public class VideoManager {
             addNode(node);
         }catch(ConcurrentModificationException e ){
             System.out.println("Modifying queue from Filedownloader");
+        }
+
+        //Before downloading, list file is rewritten with the new list
+        try {
+            PrintWriter writerFIle = new PrintWriter("videos/" + listFilename, "UTF-8");
+            writerFIle.println(node.getname() + "," + node.getUrl());
+            writerFIle.close();
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            e.printStackTrace();
         }
 
     }
@@ -326,17 +360,21 @@ public class VideoManager {
 
 
     ////JAVAFX RELATED METHODS/////////
-    //TODO: make this less spaggetiy.
-    public void runAnotherApp(Class<? extends Application> anotherAppClass) throws Exception {
-        Application app2 = anotherAppClass.newInstance();
-        Stage anotherStage = new Stage();
-        StackPane root = new StackPane();
-        final Scene scene = new Scene(root, 1080, 1920);
-        anotherStage.setScene(scene);
-        app2.start(anotherStage);
+
+
+    /**
+     * Display a JPane alert
+     * @param message: The message to be displayed in the aler
+     */
+    public void alert(String message){
+        System.out.println("Showing alert");
+        Thread alert = new Thread(new Runnable(){
+            public void run(){
+                JOptionPane.showMessageDialog(null, message);
+            }
+        });
+        alert.start();
     }
-
-
 
    ///////////////GENERIC CLASS METHODS//////////////
 

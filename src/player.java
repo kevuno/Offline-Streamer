@@ -148,7 +148,7 @@ public class Player extends Application implements Runnable {
             System.out.println("empty");
             //There is no videos in the manager, try again in 10 seconds.
             try {
-                Thread.sleep(10000);
+                Thread.sleep(15000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
