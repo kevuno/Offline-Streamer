@@ -158,14 +158,13 @@ public class VideoManager {
             try {
                 PrintWriter writerFIle = new PrintWriter("videos/" + listFilename, "UTF-8");
                 for (Video node : existQueue) {
-                    System.out.println("PUTIING IN FILE A "+node);
+                    System.out.println("Writting in list file : "+node);
                     writerFIle.println(node.getname() + "," + node.getUrl());
                 }
                 writerFIle.close();
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-            System.out.println("PREEEE download");
             //If no files are missing, then no need to download anything
             if (!nonExistQueue.isEmpty()) {
                 System.out.println("Non exist queue is not empty so there are files missing");
@@ -202,9 +201,7 @@ public class VideoManager {
 
         Video first_node = noExistQueue.removeFirst();
         FileDownloader downloader = new FileDownloader(first_node.getname(),first_node.getUrl());
-        System.out.println("predownload");
         if(downloader.downloadFromFile()){
-            System.out.println("download response");
             //Add to the exist queue, since now there is a file in the directory.
             existQueue.add(first_node);
         }
@@ -275,21 +272,11 @@ public class VideoManager {
      */
     public static void downloadQueueListener(Video node){
         try{
-            System.out.println("CALL to add node " + node);
+            System.out.println("Call from download to add node " + node);
             addNode(node);
         }catch(ConcurrentModificationException e ){
-            System.out.println("Modifying queue from Filedownloader");
-        }
-
-        //Before downloading, list file is rewritten with the new list
-        try {
-            PrintWriter writerFIle = new PrintWriter("videos/" + listFilename, "UTF-8");
-            writerFIle.println(node.getname() + "," + node.getUrl());
-            writerFIle.close();
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-
     }
 
 

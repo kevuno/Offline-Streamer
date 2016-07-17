@@ -52,7 +52,6 @@ public class MyWebSocketHandler {
 
         String[] Array = message.split("\\|");
         if(Array[0].equals("VID")){
-            System.out.println();
             //Leave only the data array by removing the first two elements of the original message.
             ArrayList<String> dataArray = new ArrayList<>(Arrays.asList(Array));
             dataArray.subList(0,2).clear();

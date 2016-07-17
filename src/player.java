@@ -90,7 +90,6 @@ public class Player extends Application implements Runnable {
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        System.out.println("aasdasd");
         //Create the view and media with the queue in order to loop recursively
         MediaView mv = createMediaView();
 
@@ -121,15 +120,11 @@ public class Player extends Application implements Runnable {
     }
 
     private void initMediaPlayer(final MediaView mediaView) {
-        System.out.println("Starting initMediaPlayer");
         counter++;
-
         if (!manager.isEmpty()) {
 
             //Print the queue for test
             System.out.println(manager.getQueue());
-
-
             //Get the next item from the manager and move the current item to the end
             String filename = manager.getNext();
             final File f = new File("videos/" + filename + ".mp4");
@@ -139,13 +134,12 @@ public class Player extends Application implements Runnable {
             //When the media ends, make a recursive call with the updated queue
             mediaPlayer.setOnEndOfMedia(()->{
                 mediaPlayer.dispose();
-                System.out.println("END OF MEDIA");
                 initMediaPlayer(mediaView);
             });
             System.out.println("Reproduction #"+counter);
             mediaView.setMediaPlayer(mediaPlayer);
         }else{
-            System.out.println("empty");
+            System.out.println("Empty queue");
             //There is no videos in the manager, try again in 10 seconds.
             try {
                 Thread.sleep(15000);

@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -108,9 +109,6 @@ public  class FileDownloader implements Runnable {
                     fos.close();
                     //Change name to specify that the file is now completely downloaded
                     Path source = Paths.get(outputDirName);
-                    /*TODO add catch exception for
-                    TODO java.nio.file.FileSystemException: videos\temp_2.mp4 -> videos\2.mp4: El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso.
-                     */
                     Files.move(source, source.resolveSibling(completeVidName));
 
                     //Add to the completed list
@@ -119,10 +117,10 @@ public  class FileDownloader implements Runnable {
                     VideoManager.downloadQueueListener(node);
 
                     //Add to the fails list in case of any exception
-                } catch (IOException e) {
-                    System.out.println("Unable to download file "+ node.getname());
+                } catch (FileSystemException e) {
+                    System.out.println("Unable to copy temp file "+ node.getname());
                     e.printStackTrace();
-                } catch (Exception e) {
+                } catch (IOException e) {
                     System.out.println("Unable to download file "+ node.getname());
                     e.printStackTrace();
                 }
