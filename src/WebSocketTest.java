@@ -50,7 +50,6 @@ public class WebSocketTest implements Runnable{
 
             }catch (Exception e) {
                 System.out.println(e);
-                System.out.println(run);
                 Thread.sleep(15000);
                 connect(client, uri);
 

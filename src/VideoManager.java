@@ -154,17 +154,10 @@ public class VideoManager {
                     existQueue.add(node);
                 }
             }
+
             //Before downloading, list file is rewritten with the files that were found in the new list
-            try {
-                PrintWriter writerFIle = new PrintWriter("videos/" + listFilename, "UTF-8");
-                for (Video node : existQueue) {
-                    System.out.println("Writting in list file : "+node);
-                    writerFIle.println(node.getname() + "," + node.getUrl());
-                }
-                writerFIle.close();
-            } catch (FileNotFoundException | UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
+            rewriteListFile(existQueue);
+
             //If no files are missing, then no need to download anything
             if (!nonExistQueue.isEmpty()) {
                 System.out.println("Non exist queue is not empty so there are files missing");
@@ -274,30 +267,42 @@ public class VideoManager {
         try{
             System.out.println("Call from download to add node " + node);
             addNode(node);
+            rewriteListFile(queue);
         }catch(ConcurrentModificationException e ){
             e.printStackTrace();
         }
     }
 
+    private static void rewriteListFile(LinkedList<Video> queue) {
+        //Before downloading, list file is rewritten with the files that were found in the new list
+        try {
+            PrintWriter writerFIle = new PrintWriter("videos/" + listFilename, "UTF-8");
+            for (Video node : queue) {
+                System.out.println("Writting in list file : "+node);
+                writerFIle.println(node.getname() + "," + node.getUrl());
+            }
+            writerFIle.close();
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+    }
 
 
     /**
      * Adds the given node to the queue according to the position given by the node
      * @param node: The node to be added to the queue
      */
-    public static Boolean addNode(Video node){
+    public static Boolean addNode(Video node) throws ConcurrentModificationException{
         //TODO SOLVE ADDING DUPLICATES OF THE SAME NODE WHEN ONLY ONE NEEDS TO BE ADDED
         //Append to the beginning if queue is empty
         if(queue.isEmpty()){
-           queue.addFirst(node);
+            queue.addFirst(node);
+            System.out.println("adding in the front");
+            return true;
 
         }else{
 
-            //If the first node of the queue is bigger than the value of the node to be inserte
-            //then we append the node at the front of the queue
-            if(queue.get(0).getvalue() > node.getvalue()){
-                queue.addFirst(node);
-            }
 
 
             //Otherwise we will go through the queue until we find in the right place to append the node
@@ -311,9 +316,11 @@ public class VideoManager {
                     // then it is appended to the end of the queue
                     if(queueNode.getvalue() < node.getvalue()){
                         queue.addLast(node);
+                        System.out.println("adding in the end");
                         return true;
                     }
                 }else{
+                    System.out.println("adding somewhere else in the middle");
                     /*If the node to be inserted is bigger than the current node of the queue AND (
                     *it is smaller than the next node of the queue, or the next node of the queue is
                     * equal to the first node of the queue then we append at the position of the next
@@ -332,6 +339,7 @@ public class VideoManager {
                         //Add if the next value is the smallest value but only if the for loop has not
                         // visited the largest value of the queue.
                         queue.add(queue.indexOf(queueNode)+1,node);
+                        return true;
                     }
                 }
                 visited.add(node.getvalue());
